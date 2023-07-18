@@ -25,10 +25,12 @@ public class RenderScreenSpaceMetaballs : ScriptableRendererFeature {
       _shaderTagIds.Add(new ShaderTagId("LightweightForward"));
 
       _renderStateBlock = new RenderStateBlock(RenderStateMask.Nothing);
+            renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
     }
 
     public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
       RenderTextureDescriptor blitTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
+            blitTargetDescriptor.colorFormat = RenderTextureFormat.ARGB32;
       cmd.GetTemporaryRT(_renderTargetId, blitTargetDescriptor);
       _renderTargetIdentifier = new RenderTargetIdentifier(_renderTargetId);
       ConfigureTarget(_renderTargetIdentifier);
@@ -66,7 +68,8 @@ public class RenderScreenSpaceMetaballs : ScriptableRendererFeature {
     public KawaseBlurRenderPass(string profilerTag, int blurSourceId) {
       _profilingSampler = new ProfilingSampler(profilerTag);
       _blurSourceId = blurSourceId;
-    }
+            renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
+        }
 
     public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
       _blurSourceIdentifier = new RenderTargetIdentifier(_blurSourceId);
@@ -78,8 +81,8 @@ public class RenderScreenSpaceMetaballs : ScriptableRendererFeature {
 
       _tmpId1 = Shader.PropertyToID("tmpBlurRT1");
       _tmpId2 = Shader.PropertyToID("tmpBlurRT2");
-      cmd.GetTemporaryRT(_tmpId1, width, height, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
-      cmd.GetTemporaryRT(_tmpId2, width, height, 0, FilterMode.Bilinear, RenderTextureFormat.ARGB32);
+      cmd.GetTemporaryRT(_tmpId1, width, height, 0, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
+      cmd.GetTemporaryRT(_tmpId2, width, height, 0, FilterMode.Bilinear, RenderTextureFormat.DefaultHDR);
 
       _tmpRT1 = new RenderTargetIdentifier(_tmpId1);
       _tmpRT2 = new RenderTargetIdentifier(_tmpId2);
@@ -94,6 +97,11 @@ public class RenderScreenSpaceMetaballs : ScriptableRendererFeature {
 
       CommandBuffer cmd = CommandBufferPool.Get();
       using (new ProfilingScope(cmd, _profilingSampler)) {
+                cmd.SetRenderTarget(_tmpRT1);
+                cmd.ClearRenderTarget(true, true, Color.clear);
+                cmd.SetRenderTarget(_tmpRT2);
+                cmd.ClearRenderTarget(true, true, Color.clear);
+
         // first pass
         cmd.SetGlobalFloat("_offset", 1.5f);
         cmd.Blit(_blurSourceIdentifier, _tmpRT1, BlurMaterial);
@@ -111,7 +119,7 @@ public class RenderScreenSpaceMetaballs : ScriptableRendererFeature {
 
         // final pass
         cmd.SetGlobalFloat("_offset", 0.5f + Passes - 1f);
-        cmd.Blit(_tmpRT1, renderingData.cameraData.renderer.cameraColorTarget, BlitMaterial);
+        cmd.Blit(_tmpRT1, renderingData.cameraData.renderer.cameraColorTarget, BlitMaterial, 0);
       }
 
       context.ExecuteCommandBuffer(cmd);

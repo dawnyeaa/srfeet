@@ -39,13 +39,23 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AlphaClip: 1
     - _AlphaStep: 0.1
     - _AlphaStep2: 0.7
+    - _Blend: 0
+    - _CastShadows: 1
     - _Clip: 0.8
     - _ColorStep: 0.01
     - _ColorStep2: 0.85
+    - _Cull: 2
+    - _DstBlend: 0
     - _QueueControl: 0
     - _QueueOffset: 0
+    - _SrcBlend: 1
+    - _Surface: 0
+    - _ZTest: 4
+    - _ZWrite: 1
+    - _ZWriteControl: 0
     m_Colors: []
   m_BuildTextureStacks: []
 --- !u!114 &7656216776055386458
