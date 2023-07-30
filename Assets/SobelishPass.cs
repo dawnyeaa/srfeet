@@ -14,10 +14,10 @@ public class SobelishPass : ScriptableRenderPass {
   private RenderTargetIdentifier _idMapIdentifier;
   private RenderTargetIdentifier _renderTargetIdentifier;
 
-  public SobelishPass(string profilerTag, string renderTargetIdName) {
+  public SobelishPass(string profilerTag, int renderTargetId) {
     // set up the profiler so it has a slot in there
     _profilingSampler = new ProfilingSampler(profilerTag);
-    _renderTargetId = Shader.PropertyToID(renderTargetIdName);
+    _renderTargetId = renderTargetId;
 
     // i get to choose when this pass happens!
     renderPassEvent = RenderPassEvent.AfterRenderingTransparents;

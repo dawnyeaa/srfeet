@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-6082927080097427031
+--- !u!114 &-6213212533238149581
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -17,6 +17,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 2147483647
   _sobelishMaterial: {fileID: 2100000, guid: 8059bc148d72b03459653a24cc7133c0, type: 2}
+  _jfaComputeShader: {fileID: 7200000, guid: d432e71b72d16054bb121e53e856767d, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -33,8 +34,8 @@ MonoBehaviour:
     debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7,
       type: 3}
   m_RendererFeatures:
-  - {fileID: -6082927080097427031}
-  m_RendererFeatureMap: a95130a40c1a95ab
+  - {fileID: -6213212533238149581}
+  m_RendererFeatureMap: 33ce55ba1e3cc6a9
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
