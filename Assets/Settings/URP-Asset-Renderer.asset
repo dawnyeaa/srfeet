@@ -1,5 +1,22 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-6082927080097427031
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a8e692382f375647bb6b05e665d42a0, type: 3}
+  m_Name: OutlineyFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  _layerMask:
+    serializedVersion: 2
+    m_Bits: 2147483647
+  _sobelishMaterial: {fileID: 2100000, guid: 8059bc148d72b03459653a24cc7133c0, type: 2}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16,8 +33,8 @@ MonoBehaviour:
     debugReplacementPS: {fileID: 4800000, guid: cf852408f2e174538bcd9b7fda1c5ae7,
       type: 3}
   m_RendererFeatures:
-  - {fileID: 4152524360122493327}
-  m_RendererFeatureMap: 8fe9418ee7baa039
+  - {fileID: -6082927080097427031}
+  m_RendererFeatureMap: a95130a40c1a95ab
   m_UseNativeRenderPass: 0
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   xrSystemData: {fileID: 11400000, guid: 60e1133243b97e347b653163a8c01b64, type: 2}
@@ -58,23 +75,3 @@ MonoBehaviour:
   m_ClusteredRendering: 0
   m_TileSize: 32
   m_IntermediateTextureMode: 1
---- !u!114 &4152524360122493327
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8914cca423d71ac4d8b34102b6f23174, type: 3}
-  m_Name: RenderScreenSpaceMetaballs
-  m_EditorClassIdentifier: 
-  m_Active: 1
-  _renderTargetId: _ToddRenderTargetTest
-  _layerMask:
-    serializedVersion: 2
-    m_Bits: 2147483648
-  _blurMaterial: {fileID: 2100000, guid: 476a346d1f464dc40808fa31df114984, type: 2}
-  _blitMaterial: {fileID: 2100000, guid: f347e283873f320409fac699b4d2ee23, type: 2}
-  _blurPasses: 12
