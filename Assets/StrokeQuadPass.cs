@@ -3,37 +3,96 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 public class StrokeQuadPass : ScriptableRenderPass {
-  ComputeBuffer drawArgsBuffer;
-  ComputeBuffer quadPoints;
+  ComputeBuffer _drawArgsBuffer;
+  ComputeBuffer _quadPoints;
 
   ProfilingSampler _profilingSampler;
   ComputeShader _strokeQuadCompute;
-  
+  public Material _quadMaterial;
+  public Material _sobelBlitMat;
+  // the id that we're gonna store for our input and output render target
   private int _inputRenderTargetId;
+  // an identifier SPECIFICALLY for the command buffer
+  private RenderTargetIdentifier _inputRenderTargetIdentifier;
+  private int _quadPointsId;
   private int _strokeyQuadsKernel;
-  public StrokeQuadPass(ComputeShader strokeQuadCompute, string profilerTag, int renderTargetId) {
+
+  private Texture2D _poissonTex;
+  public StrokeQuadPass(ComputeShader strokeQuadCompute, string profilerTag, int renderTargetId, Texture2D poissonTex) {
     _profilingSampler = new ProfilingSampler(profilerTag);
     _inputRenderTargetId = renderTargetId;
     _strokeQuadCompute = strokeQuadCompute;
+    _poissonTex = poissonTex;
 
     _strokeyQuadsKernel = _strokeQuadCompute.FindKernel("StrokeyQuads");
 
-    quadPoints = new ComputeBuffer(1000, sizeof(uint)*2, ComputeBufferType.Append);
+    _quadPointsId = Shader.PropertyToID("_quadPoints");
 
-    drawArgsBuffer = new ComputeBuffer(4, sizeof(uint), ComputeBufferType.IndirectArguments);
+    _quadPoints = new ComputeBuffer(1000, sizeof(uint)*2 + sizeof(float), ComputeBufferType.Append);
 
-    drawArgsBuffer.SetData(new uint[] {
+    _drawArgsBuffer = new ComputeBuffer(4, sizeof(uint), ComputeBufferType.IndirectArguments);
+
+    _drawArgsBuffer.SetData(new uint[] {
       6, // vertices per instance
       0, // instance count
       0, // byte offset of first vertex
       0 // byte offset of first instance
     });
+
+    renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
+  }
+
+  public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
+    _quadPoints.SetCounterValue(0);
+  }
+  public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
+    _inputRenderTargetIdentifier = new RenderTargetIdentifier(_inputRenderTargetId);
   }
 
   public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
     var cmd = CommandBufferPool.Get();
     cmd.Clear();
 
-    cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, _inputRenderTargetId, renderingData.cameraData.camera.activeTexture);
+    RenderTextureDescriptor camRTDesc = renderingData.cameraData.cameraTargetDescriptor;
+    RenderTexture camRT = renderingData.cameraData.camera.activeTexture;
+    
+    using (new ProfilingScope(cmd, _profilingSampler)) {
+      cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, _inputRenderTargetId, _inputRenderTargetIdentifier);
+      cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, Shader.PropertyToID("_poissonTex"), _poissonTex);
+      cmd.SetComputeFloatParam(_strokeQuadCompute, Shader.PropertyToID("_poissonSize"), _poissonTex.width);
+      cmd.SetComputeBufferParam(_strokeQuadCompute, _strokeyQuadsKernel, _quadPointsId, _quadPoints);
+
+      cmd.DispatchCompute(_strokeQuadCompute, _strokeyQuadsKernel,
+                          Mathf.CeilToInt(camRTDesc.width / 32),
+                          Mathf.CeilToInt(camRTDesc.height / 32),
+                          1);
+      
+      cmd.CopyCounterValue(_quadPoints, _drawArgsBuffer, sizeof(uint));
+
+      // _sobelBlitMat.SetTexture(Shader.PropertyToID("_Screen"), camRT);
+      // cmd.Blit(_inputRenderTargetIdentifier, camRT, _sobelBlitMat, 0);
+      // cmd.SetRenderTarget(camRT);
+
+      MaterialPropertyBlock properties = new();
+      properties.SetBuffer(_quadPointsId, _quadPoints);
+      properties.SetFloat(Shader.PropertyToID("_WidthRatio"), renderingData.cameraData.camera.aspect);
+      properties.SetFloat(Shader.PropertyToID("_ScreenSizeX"), camRTDesc.width);
+      properties.SetFloat(Shader.PropertyToID("_ScreenSizeY"), camRTDesc.height);
+
+      cmd.DrawProceduralIndirect(Matrix4x4.identity, _quadMaterial, 0, MeshTopology.Triangles, _drawArgsBuffer, 0, properties);
+
+    }
+
+    context.ExecuteCommandBuffer(cmd);
+
+    cmd.Clear();
+    CommandBufferPool.Release(cmd);
+  }
+
+  public override void OnCameraCleanup(CommandBuffer cmd) {}
+
+  public void Dispose() {
+    _quadPoints?.Dispose();
+    _drawArgsBuffer?.Dispose();
   }
 }

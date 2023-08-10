@@ -51,6 +51,22 @@ Shader "Custom/Sobelish" {
         return mag;
       }
 
+      float2 actuallySobel(float2 uv, float stepx, float stepy) {
+        float tleft  = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(-stepx, -stepy)));
+        float top    = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(0, -stepy)));
+        float tright = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(stepx, -stepy)));
+        float left   = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(-stepx, 0)));
+        float right  = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(stepx, 0)));
+        float bleft  = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(-stepx, stepy)));
+        float bottom = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(0, stepy)));
+        float bright = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(stepx, stepy)));
+
+        float x = (3*tleft + 3*bleft + (10*left)) - (3*tright + 3*bright + (10*right));
+        float y = (3*tleft + 3*tright + (10*top)) - (3*bleft + 3*bright + (10*bottom));
+        float mag = sqrt((x*x) + (y*y));
+        return float2(mag, (atan2(y, x)/(2*PI))+0.5);
+      }
+
       VertexOutput vert(VertexInput i) {
         VertexOutput o;
 
@@ -62,7 +78,7 @@ Shader "Custom/Sobelish" {
       }
 
       half4 frag(VertexOutput i) : SV_TARGET {
-        half4 color = step(0.001, sobelish(i.uv, _MainTex_TexelSize.x, _MainTex_TexelSize.y));
+        half4 color = half4(actuallySobel(i.uv, _MainTex_TexelSize.x, _MainTex_TexelSize.y), 0, 0);
         return color;
       }
 

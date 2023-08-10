@@ -1,14 +1,25 @@
+#include "StrokePoint.hlsl"
+
+Texture2D<float2> _sobelOutRT;
+Texture2D<float> _poissonTex;
+
+float _poissonSize;
+
+AppendStructuredBuffer<StrokePoint> _quadPoints;
+
+StrokePoint MakeStrokePoint(int2 positionTexel, float angle) {
+  StrokePoint p;
+  p.middle = positionTexel;
+  p.angle = angle;
+  return p;
+}
+
 #pragma kernel StrokeyQuads
-
-Texture2D<float> _sourceTexture;
-
-AppendStructuredBuffer<int2> _quadPoints;
-
 [numthreads(32,32,1)]
 void StrokeyQuads (uint3 id : SV_DispatchThreadID) {
-  float color = _sourceTexture[id.xy];
+  float color = _sobelOutRT[id.xy].x * _poissonTex[id.xy % _poissonSize];
 
-  if (color > 0.5) {
-    _quadPoints.Append(int2(id.xy));
+  if (color > 0.9999) {
+    _quadPoints.Append(MakeStrokePoint(id.xy, _sobelOutRT[id.xy].y));
   }
 }
