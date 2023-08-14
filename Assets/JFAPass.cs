@@ -1,61 +1,59 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-
 public class JFAPass : ScriptableRenderPass {
-  private ComputeShader _jfaComputeShader;
-  private string _initKernelName, _jumpKernelName;
-  private ProfilingSampler _profilingSampler;
-  // the id that we're gonna store for our input and output render target
+  ProfilingSampler _profilingSampler;
+  public Material _jfaMaterial;
   private int _inputRenderTargetId;
-  // an identifier SPECIFICALLY for the command buffer
   private RenderTargetIdentifier _inputRenderTargetIdentifier;
-  private int _tmpId;
-  private RenderTargetIdentifier _tmpRT;
-  private int _renderTargetWidth, _renderTargetHeight;
 
-  public JFAPass(ComputeShader jfaComputeShader, string initKernelName, string jumpKernelName, string profilerTag, int renderTargetId) {
+  private int _outlineWidth;
+  int _tmpId1, _tmpId2;
+  RenderTargetIdentifier _tmpRT1, _tmpRT2;
+  public JFAPass(int outlineWidth, string profilerTag, int renderTargetId) {
     _profilingSampler = new ProfilingSampler(profilerTag);
     _inputRenderTargetId = renderTargetId;
-    _jfaComputeShader = jfaComputeShader;
-    _initKernelName = initKernelName;
-    _jumpKernelName = jumpKernelName;
+    _outlineWidth = outlineWidth;
     renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
   }
 
   public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
-    _tmpId = Shader.PropertyToID("_JFAPoints");
-
-    var cameraTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
     _inputRenderTargetIdentifier = new RenderTargetIdentifier(_inputRenderTargetId);
-    cameraTargetDescriptor.enableRandomWrite = true;
-
-    cmd.GetTemporaryRT(_tmpId, cameraTargetDescriptor);
-    _tmpRT = new RenderTargetIdentifier(_tmpId);
-
-    
-    _renderTargetWidth = cameraTargetDescriptor.width;
-    _renderTargetHeight = cameraTargetDescriptor.height;
   }
 
-  public override void OnCameraCleanup(CommandBuffer cmd) {
-    cmd.ReleaseTemporaryRT(_tmpId);
+  public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
+    _tmpId1 = Shader.PropertyToID("tmpBlurRT1");
+    _tmpId2 = Shader.PropertyToID("tmpBlurRT2");
+    cmd.GetTemporaryRT(_tmpId1, cameraTextureDescriptor);
+    cmd.GetTemporaryRT(_tmpId2, cameraTextureDescriptor);
+
+    _tmpRT1 = new RenderTargetIdentifier(_tmpId1);
+    _tmpRT2 = new RenderTargetIdentifier(_tmpId2);
+
+    ConfigureTarget(_tmpRT1);
+    ConfigureTarget(_tmpRT2);
   }
 
   public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
     var cmd = CommandBufferPool.Get();
-    var initKernel = _jfaComputeShader.FindKernel(_initKernelName);
-    var jumpKernel = _jfaComputeShader.FindKernel(_jumpKernelName);
-
-    _jfaComputeShader.GetKernelThreadGroupSizes(initKernel, out uint xGroupSize, out uint yGroupSize, out _);
+    cmd.Clear();
+    int passes = Mathf.FloorToInt(Mathf.Log(_outlineWidth, 2));
 
     using (new ProfilingScope(cmd, _profilingSampler)) {
-      cmd.Blit(_inputRenderTargetIdentifier, _tmpRT);
-      cmd.SetComputeTextureParam(_jfaComputeShader, initKernel, _tmpId, _tmpRT);
-      cmd.SetComputeIntParam(_jfaComputeShader, "_ResultWidth", _renderTargetWidth);
-      cmd.SetComputeIntParam(_jfaComputeShader, "_ResultHeight", _renderTargetHeight);
-    
-      cmd.DispatchCompute(_jfaComputeShader, initKernel, Mathf.CeilToInt(_renderTargetWidth / xGroupSize), Mathf.CeilToInt(_renderTargetHeight / yGroupSize), 1);
+      cmd.Blit(_inputRenderTargetIdentifier, _tmpRT1, _jfaMaterial, 0);
+
+      for (int jump = (int)Mathf.Pow(2,passes); jump >= 1; jump /= 2) {
+        cmd.SetGlobalInt(Shader.PropertyToID("_jumpDistance"), jump);
+        cmd.Blit(_tmpRT1, _tmpRT2, _jfaMaterial, 1);
+
+        // ping pong
+        var rttmp = _tmpRT1;
+        _tmpRT1 = _tmpRT2;
+        _tmpRT2 = rttmp;
+      }
+
+      // final pass
+      cmd.Blit(_tmpRT1, renderingData.cameraData.renderer.cameraColorTarget, _jfaMaterial, 2);
     }
 
     context.ExecuteCommandBuffer(cmd);
