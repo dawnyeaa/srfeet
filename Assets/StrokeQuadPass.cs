@@ -17,6 +17,8 @@ public class StrokeQuadPass : ScriptableRenderPass {
   private int _quadPointsId;
   private int _strokeyQuadsKernel;
 
+  private RenderTargetIdentifier _camRT;
+
   private Texture2D _poissonTex;
   public StrokeQuadPass(ComputeShader strokeQuadCompute, string profilerTag, int renderTargetId, Texture2D poissonTex) {
     _profilingSampler = new ProfilingSampler(profilerTag);
@@ -42,6 +44,10 @@ public class StrokeQuadPass : ScriptableRenderPass {
     renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
   }
 
+  public void SetTarget(RenderTargetIdentifier rt) {
+    _camRT = rt;
+  }
+
   public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
     _quadPoints.SetCounterValue(0);
   }
@@ -54,7 +60,6 @@ public class StrokeQuadPass : ScriptableRenderPass {
     cmd.Clear();
 
     RenderTextureDescriptor camRTDesc = renderingData.cameraData.cameraTargetDescriptor;
-    RenderTexture camRT = renderingData.cameraData.camera.activeTexture;
     
     using (new ProfilingScope(cmd, _profilingSampler)) {
       cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, _inputRenderTargetId, _inputRenderTargetIdentifier);
@@ -69,8 +74,10 @@ public class StrokeQuadPass : ScriptableRenderPass {
       
       cmd.CopyCounterValue(_quadPoints, _drawArgsBuffer, sizeof(uint));
 
-      // _sobelBlitMat.SetTexture(Shader.PropertyToID("_Screen"), camRT);
-      // cmd.Blit(_inputRenderTargetIdentifier, camRT, _sobelBlitMat, 0);
+      RenderTexture rt = RenderTexture.GetTemporary(camRTDesc);
+      cmd.Blit(_camRT, rt);
+      _sobelBlitMat.SetTexture(Shader.PropertyToID("_Screen"), rt);
+      cmd.Blit(_inputRenderTargetIdentifier, _camRT, _sobelBlitMat, 0);
       // cmd.SetRenderTarget(camRT);
 
       MaterialPropertyBlock properties = new();
