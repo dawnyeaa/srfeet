@@ -22,10 +22,12 @@ public class JFAPass : ScriptableRenderPass {
   }
 
   public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
-    _tmpId1 = Shader.PropertyToID("tmpBlurRT1");
-    _tmpId2 = Shader.PropertyToID("tmpBlurRT2");
-    cmd.GetTemporaryRT(_tmpId1, cameraTextureDescriptor);
-    cmd.GetTemporaryRT(_tmpId2, cameraTextureDescriptor);
+    RenderTextureDescriptor desc = cameraTextureDescriptor;
+    desc.colorFormat = RenderTextureFormat.ARGBFloat;
+    _tmpId1 = Shader.PropertyToID("tmpJFART1");
+    _tmpId2 = Shader.PropertyToID("tmpJFART2");
+    cmd.GetTemporaryRT(_tmpId1, desc);
+    cmd.GetTemporaryRT(_tmpId2, desc);
 
     _tmpRT1 = new RenderTargetIdentifier(_tmpId1);
     _tmpRT2 = new RenderTargetIdentifier(_tmpId2);
@@ -52,7 +54,10 @@ public class JFAPass : ScriptableRenderPass {
         _tmpRT1 = _tmpRT2;
         _tmpRT2 = rttmp;
       }
-      
+
+      cmd.Blit(renderingData.cameraData.renderer.cameraColorTarget, _tmpRT2);
+
+      cmd.SetGlobalTexture(Shader.PropertyToID("_Screen"), _tmpRT2);
       cmd.SetGlobalFloat(Shader.PropertyToID("_lineThickness"), _outlineWidth);
       // final pass
       cmd.Blit(_tmpRT1, renderingData.cameraData.renderer.cameraColorTarget, _jfaMaterial, 2);

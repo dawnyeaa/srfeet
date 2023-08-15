@@ -6,7 +6,7 @@ public class OutlineyFeature : ScriptableRendererFeature {
   private IDPass _idPass;
   private SobelishPass _sobelishPass;
   private JFAPass _jfaPass;
-  private StrokeQuadPass _strokeQuadPass;
+  // private StrokeQuadPass _strokeQuadPass;
 
   [SerializeField] LayerMask _layerMask;
   [SerializeField] Material _sobelishMaterial;
@@ -24,10 +24,10 @@ public class OutlineyFeature : ScriptableRendererFeature {
     _sobelishPass = new SobelishPass("Sobelish Pass", SobelOutRT) {
       _sobelishMaterial = _sobelishMaterial
     };
-    _strokeQuadPass = new StrokeQuadPass(_strokeyQuadsComputeShader, "Strokey Quads Pass", SobelOutRT, _poissonTex) {
-      _quadMaterial = _strokeQuadMaterial,
-      _sobelBlitMat = _sobelBlitMaterial
-    };
+    // _strokeQuadPass = new StrokeQuadPass(_strokeyQuadsComputeShader, "Strokey Quads Pass", SobelOutRT, _poissonTex) {
+    //   _quadMaterial = _strokeQuadMaterial,
+    //   _sobelBlitMat = _sobelBlitMaterial
+    // };
     _jfaPass = new JFAPass(_outlineWidth, "JFA Pass", SobelOutRT) {
       _jfaMaterial = _jfaMaterial
     };
@@ -40,8 +40,8 @@ public class OutlineyFeature : ScriptableRendererFeature {
     renderer.EnqueuePass(_jfaPass);
   }
 
-  protected override void Dispose(bool disposing) {
-    _strokeQuadPass.Dispose();
-    base.Dispose(disposing);
-  }
+  // protected override void Dispose(bool disposing) {
+  //   _strokeQuadPass.Dispose();
+  //   base.Dispose(disposing);
+  // }
 }

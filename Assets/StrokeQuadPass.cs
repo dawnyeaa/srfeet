@@ -74,10 +74,8 @@ public class StrokeQuadPass : ScriptableRenderPass {
       
       cmd.CopyCounterValue(_quadPoints, _drawArgsBuffer, sizeof(uint));
 
-      RenderTexture rt = RenderTexture.GetTemporary(camRTDesc);
-      cmd.Blit(_camRT, rt);
-      _sobelBlitMat.SetTexture(Shader.PropertyToID("_Screen"), rt);
-      cmd.Blit(_inputRenderTargetIdentifier, _camRT, _sobelBlitMat, 0);
+      cmd.SetGlobalTexture(Shader.PropertyToID("_Screen"), renderingData.cameraData.renderer.cameraColorTarget);
+      cmd.Blit(_inputRenderTargetIdentifier, renderingData.cameraData.renderer.cameraColorTarget, _sobelBlitMat, 0);
       // cmd.SetRenderTarget(camRT);
 
       MaterialPropertyBlock properties = new();

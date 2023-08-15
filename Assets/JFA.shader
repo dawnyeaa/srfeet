@@ -1,6 +1,7 @@
 Shader "Custom/JFA" {
   Properties {
     _MainTex ("Texture", 2D) = "white" {}
+    _ModulateTex ("Modulation tex", 2D) = "black" {}
   }
 
   SubShader {
@@ -45,9 +46,9 @@ Shader "Custom/JFA" {
         return o;
       }
 
-      half4 frag(VertexOutput i) : SV_TARGET {
-        float stepped = step(0.5, SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).r);
-        half4 color = lerp(half4(-1, -1, -1, -1), half4(i.uv, 0, 0), stepped);
+      float4 frag(VertexOutput i) : SV_TARGET {
+        float stepped = step(0.1, SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).r);
+        float4 color = lerp(float4(-1, -1, -1, 0), float4(i.uv, 0, 1), stepped);
         return color;
       }
 
@@ -99,14 +100,16 @@ Shader "Custom/JFA" {
 
       float2 JFA(float2 fragCoord) {
         float bestDistance = 9999.0;
-        float2 bestCoord = float2(0, 0);
+        float2 bestCoord = float2(-1, -1);
 
         for (int y = -1; y <= 1; ++y) {
           for (int x = -1; x <= 1; ++x) {
             float2 sampleCoord = fragCoord + int2(x, y) * _MainTex_TexelSize.xy * _jumpDistance;
-            float2 seedCoord = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sampleCoord).xy;
+            float4 seedInfo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, sampleCoord);
+            float2 seedCoord = seedInfo.xy;
             float dist = ScreenDist(seedCoord - fragCoord);
-            if ((seedCoord.x != -1 || seedCoord.y != -1) && dist < bestDistance) {
+            if (seedInfo.a < 0.1) continue;
+            if (dist < bestDistance) {
               bestDistance = dist;
               bestCoord = seedCoord;
             }
@@ -116,8 +119,9 @@ Shader "Custom/JFA" {
         return bestCoord;
       }
 
-      half4 frag(VertexOutput i) : SV_TARGET {
-        half4 color = half4(JFA(i.uv), 0, 0);
+      float4 frag(VertexOutput i) : SV_TARGET {
+        float2 jfaoutput = JFA(i.uv);
+        float4 color = float4(jfaoutput, 0, (sign(jfaoutput.x)*0.5)+0.5);
         return color;
       }
 
@@ -141,6 +145,13 @@ Shader "Custom/JFA" {
       TEXTURE2D(_MainTex);
       SAMPLER(sampler_MainTex);
       float4 _MainTex_TexelSize;
+      
+      TEXTURE2D(_Screen);
+      SAMPLER(sampler_Screen);
+      float4 _Screen_TexelSize;
+      
+      TEXTURE2D(_ModulateTex);
+      SAMPLER(sampler_ModulateTex);
 
       struct VertexInput {
         float4 positionOS : POSITION;
@@ -155,7 +166,7 @@ Shader "Custom/JFA" {
       float ScreenDist(float2 v) {
         float ratio = _MainTex_TexelSize.x / _MainTex_TexelSize.y;
         v.x /= ratio;
-        return dot(v, v);
+        return length(v);
       }
 
       VertexOutput vert(VertexInput i) {
@@ -170,11 +181,12 @@ Shader "Custom/JFA" {
 
       half4 frag(VertexOutput i) : SV_TARGET {
         float aspect = _MainTex_TexelSize.z*_MainTex_TexelSize.y;
-        float2 seedpos = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).xy;
+        float4 seedinfo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+        float2 seedpos = seedinfo.xy;
+        float mask = step(0.1, seedinfo.a);
         float2 pos = i.uv;
-        float stepy = step(_lineThickness*_MainTex_TexelSize.y, ScreenDist(pos - seedpos));
-        half4 color = half4(stepy, stepy, stepy, stepy);
-        return color;
+        float stepy = step(ScreenDist(pos - seedpos)+(SAMPLE_TEXTURE2D(_ModulateTex, sampler_ModulateTex, i.uv*float2(8,8))*0.01), _lineThickness*_MainTex_TexelSize.y);
+        return lerp(SAMPLE_TEXTURE2D(_Screen, sampler_Screen, i.uv), float4(0, 0, 0, 1), stepy*mask);
       }
 
       ENDHLSL

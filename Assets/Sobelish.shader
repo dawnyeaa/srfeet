@@ -61,8 +61,8 @@ Shader "Custom/Sobelish" {
         float bottom = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(0, stepy)));
         float bright = intensity(SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uv + half2(stepx, stepy)));
 
-        float x = (3*tleft + 3*bleft + (10*left)) - (3*tright + 3*bright + (10*right));
-        float y = (3*tleft + 3*tright + (10*top)) - (3*bleft + 3*bright + (10*bottom));
+        float x = (1*tleft + 1*bleft + (2*left)) - (1*tright + 1*bright + (2*right));
+        float y = (1*tleft + 1*tright + (2*top)) - (1*bleft + 1*bright + (2*bottom));
         float mag = sqrt((x*x) + (y*y));
         return float2(mag, (atan2(y, x)/(2*PI))+0.5);
       }
