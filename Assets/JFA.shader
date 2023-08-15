@@ -152,6 +152,12 @@ Shader "Custom/JFA" {
         float2 uv         : TEXCOORD0;
       };
 
+      float ScreenDist(float2 v) {
+        float ratio = _MainTex_TexelSize.x / _MainTex_TexelSize.y;
+        v.x /= ratio;
+        return dot(v, v);
+      }
+
       VertexOutput vert(VertexInput i) {
         VertexOutput o;
 
@@ -163,10 +169,10 @@ Shader "Custom/JFA" {
       }
 
       half4 frag(VertexOutput i) : SV_TARGET {
-        float aspect = _MainTex_TexelSize.z/_MainTex_TexelSize.w;
+        float aspect = _MainTex_TexelSize.z*_MainTex_TexelSize.y;
         float2 seedpos = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).xy;
         float2 pos = i.uv;
-        float stepy = step(0.01, length(pos - seedpos));
+        float stepy = step(_lineThickness*_MainTex_TexelSize.y, ScreenDist(pos - seedpos));
         half4 color = half4(stepy, stepy, stepy, stepy);
         return color;
       }
