@@ -21,7 +21,7 @@ MonoBehaviour:
   _sobelBlitMaterial: {fileID: 2100000, guid: 4d078ecd5b219634da298b81a62d58a7, type: 2}
   _jfaMaterial: {fileID: 2100000, guid: 4ae4c40ab7e35374a8b0291b69025202, type: 2}
   _osMaterial: {fileID: 2100000, guid: b29f04ef74d8ab947b4c2aa1576306ab, type: 2}
-  _outlineWidth: 4
+  _outlineWidth: 15
   _strokeyQuadsComputeShader: {fileID: 7200000, guid: 2289e0735d900594d8652934a5ecd8cb,
     type: 3}
   _poissonTex: {fileID: 2800000, guid: 1d9df5a64e122ce4b862e5ef3a793798, type: 3}

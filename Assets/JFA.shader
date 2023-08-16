@@ -1,7 +1,7 @@
 Shader "Custom/JFA" {
   Properties {
     _MainTex ("Texture", 2D) = "white" {}
-    _ModulateTex ("Modulation tex", 2D) = "black" {}
+    _ModulateTex ("Modulation tex", 3D) = "black" {}
   }
 
   SubShader {
@@ -150,7 +150,10 @@ Shader "Custom/JFA" {
       SAMPLER(sampler_Screen);
       float4 _Screen_TexelSize;
       
-      TEXTURE2D(_ModulateTex);
+      TEXTURE2D(_OSSobel);
+      SAMPLER(sampler_OSSobel);
+      
+      TEXTURE3D(_ModulateTex);
       SAMPLER(sampler_ModulateTex);
 
       struct VertexInput {
@@ -183,9 +186,10 @@ Shader "Custom/JFA" {
         float aspect = _MainTex_TexelSize.z*_MainTex_TexelSize.y;
         float4 seedinfo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
         float2 seedpos = seedinfo.xy;
+        float3 sobelOSPos = SAMPLE_TEXTURE2D(_OSSobel, sampler_OSSobel, seedpos);
         float mask = step(0.1, seedinfo.a);
         float2 pos = i.uv;
-        float stepy = step(ScreenDist(pos - seedpos)+(SAMPLE_TEXTURE2D(_ModulateTex, sampler_ModulateTex, i.uv*float2(8,8))*0.01), _lineThickness*_MainTex_TexelSize.y);
+        float stepy = step(ScreenDist(pos - seedpos)+(SAMPLE_TEXTURE3D(_ModulateTex, sampler_ModulateTex, sobelOSPos)*0.02).r, _lineThickness*_MainTex_TexelSize.y);
         return lerp(SAMPLE_TEXTURE2D(_Screen, sampler_Screen, i.uv), float4(0, 0, 0, 1), stepy*mask);
       }
 

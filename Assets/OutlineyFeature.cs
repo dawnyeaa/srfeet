@@ -31,7 +31,7 @@ public class OutlineyFeature : ScriptableRendererFeature {
     //   _quadMaterial = _strokeQuadMaterial,
     //   _sobelBlitMat = _sobelBlitMaterial
     // };
-    _jfaPass = new JFAPass(_outlineWidth, "JFA Pass", SobelOutRT) {
+    _jfaPass = new JFAPass(_outlineWidth, "JFA Pass", SobelOutRT, SobelOutOSPosRT) {
       _jfaMaterial = _jfaMaterial
     };
   }

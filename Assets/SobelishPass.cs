@@ -9,6 +9,7 @@ public class SobelishPass : ScriptableRenderPass {
   private ProfilingSampler _profilingSampler;
   // the render target that we're grabbing the id map from
   private static readonly int _idMapId = Shader.PropertyToID("_IDPassRT");
+  private static readonly int _osMapId = Shader.PropertyToID("_OSTex");
   // making an id for the render target we're gonna draw the sobelish thing to
   private int _renderTargetIdSobel;
   private int _renderTargetIdSobelOS;
@@ -17,6 +18,7 @@ public class SobelishPass : ScriptableRenderPass {
   private RenderTargetIdentifier[] _renderTargetIdentifiers;
   private ShaderTagId _osShaderTag;
   private FilteringSettings _filteringSettings;
+  private RenderTargetIdentifier _depthBufTemp, _osMap;
 
   public SobelishPass(string profilerTag, int renderTargetIdSobel, int renderTargetIdSobelOS) {
     // set up the profiler so it has a slot in there
@@ -38,9 +40,14 @@ public class SobelishPass : ScriptableRenderPass {
   public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
     cmd.GetTemporaryRT(_renderTargetIdSobel, cameraTextureDescriptor);
     cmd.GetTemporaryRT(_renderTargetIdSobelOS, cameraTextureDescriptor);
+    cmd.GetTemporaryRT(Shader.PropertyToID("_depthBufTemp"), cameraTextureDescriptor);
+    cmd.GetTemporaryRT(_osMapId, cameraTextureDescriptor);
     _renderTargetIdentifiers = new RenderTargetIdentifier[2];
     _renderTargetIdentifiers[0] = new RenderTargetIdentifier(_renderTargetIdSobel);
     _renderTargetIdentifiers[1] = new RenderTargetIdentifier(_renderTargetIdSobelOS);
+    _depthBufTemp = new RenderTargetIdentifier(Shader.PropertyToID("_depthBufTemp"));
+    _osMap = new RenderTargetIdentifier(_osMapId);
+    ConfigureTarget(_osMap);
   }
 
   public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
@@ -48,26 +55,26 @@ public class SobelishPass : ScriptableRenderPass {
 
     CommandBuffer cmd = CommandBufferPool.Get();
     using (new ProfilingScope(cmd, _profilingSampler)) {
-      // DrawingSettings objectSpaceMatSettings = CreateDrawingSettings(_osShaderTag, ref renderingData, SortingCriteria.CommonOpaque);
-      // objectSpaceMatSettings.overrideMaterial = _osMaterial;
-      // objectSpaceMatSettings.overrideMaterialPassIndex = 0;
+      DrawingSettings objectSpaceMatSettings = CreateDrawingSettings(_osShaderTag, ref renderingData, SortingCriteria.CommonOpaque);
+      objectSpaceMatSettings.overrideMaterial = _osMaterial;
+      objectSpaceMatSettings.overrideMaterialPassIndex = 0;
 
-      // cmd.SetRenderTarget(renderingData.cameraData.renderer.cameraColorTarget, renderingData.cameraData.renderer.cameraDepthTarget);
-      // cmd.ClearRenderTarget(true, true, Color.black);
+      cmd.SetRenderTarget(_osMap, renderingData.cameraData.renderer.cameraDepthTarget);
+      cmd.ClearRenderTarget(true, true, Color.black);
 
-      // context.ExecuteCommandBuffer(cmd);
-      // cmd.Clear();
+      context.ExecuteCommandBuffer(cmd);
+      cmd.Clear();
 
-      // context.DrawRenderers(renderingData.cullResults, ref objectSpaceMatSettings, ref _filteringSettings);
+      context.DrawRenderers(renderingData.cullResults, ref objectSpaceMatSettings, ref _filteringSettings);
+      
+      ConfigureTarget(_renderTargetIdentifiers);
 
       // render the sobel
-      ConfigureTarget(_renderTargetIdentifiers);
-      ConfigureTarget(_idMapIdentifier);
+      cmd.SetRenderTarget(_renderTargetIdentifiers, _depthBufTemp);
       cmd.SetViewProjectionMatrices(Matrix4x4.identity, Matrix4x4.identity);
       cmd.SetGlobalTexture(Shader.PropertyToID("_MainTex"), _idMapIdentifier);
+      cmd.SetGlobalTexture(_osMapId, _osMap);
       cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, _sobelishMaterial);
-
-      // cmd.Blit(_idMapIdentifier, _renderTargetIdentifiers, _sobelishMaterial);
     }
 
     context.ExecuteCommandBuffer(cmd);

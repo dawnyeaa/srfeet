@@ -5,20 +5,24 @@ public class JFAPass : ScriptableRenderPass {
   ProfilingSampler _profilingSampler;
   public Material _jfaMaterial;
   private int _inputRenderTargetId;
+  private int _osSobelTexId;
   private RenderTargetIdentifier _inputRenderTargetIdentifier;
+  private RenderTargetIdentifier _osSobelTex;
 
   private int _outlineWidth;
   int _tmpId1, _tmpId2;
   RenderTargetIdentifier _tmpRT1, _tmpRT2;
-  public JFAPass(int outlineWidth, string profilerTag, int renderTargetId) {
+  public JFAPass(int outlineWidth, string profilerTag, int renderTargetId, int osSobelTexId) {
     _profilingSampler = new ProfilingSampler(profilerTag);
     _inputRenderTargetId = renderTargetId;
+    _osSobelTexId = osSobelTexId;
     _outlineWidth = outlineWidth;
     renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
   }
 
   public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
     _inputRenderTargetIdentifier = new RenderTargetIdentifier(_inputRenderTargetId);
+    _osSobelTex = new RenderTargetIdentifier(_osSobelTexId);
   }
 
   public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
@@ -51,14 +55,13 @@ public class JFAPass : ScriptableRenderPass {
         cmd.Blit(_tmpRT1, _tmpRT2, _jfaMaterial, 1);
 
         // ping pong
-        var rttmp = _tmpRT1;
-        _tmpRT1 = _tmpRT2;
-        _tmpRT2 = rttmp;
+        (_tmpRT2, _tmpRT1) = (_tmpRT1, _tmpRT2);
       }
 
       cmd.Blit(renderingData.cameraData.renderer.cameraColorTarget, _tmpRT2);
       
       cmd.SetGlobalTexture(Shader.PropertyToID("_Screen"), _tmpRT2);
+      cmd.SetGlobalTexture(Shader.PropertyToID("_OSSobel"), _osSobelTex);
       cmd.SetGlobalFloat(Shader.PropertyToID("_lineThickness"), _outlineWidth);
       
       // final pass
