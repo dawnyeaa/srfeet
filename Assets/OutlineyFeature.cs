@@ -13,6 +13,7 @@ public class OutlineyFeature : ScriptableRendererFeature {
   [SerializeField] Material _strokeQuadMaterial;
   [SerializeField] Material _sobelBlitMaterial;
   [SerializeField] Material _jfaMaterial;
+  [SerializeField] Material _osMaterial;
   [SerializeField] [Min(1)] int _outlineWidth;
   // [SerializeField] ComputeShader _jfaComputeShader;
   [SerializeField] ComputeShader _strokeyQuadsComputeShader;
@@ -20,9 +21,11 @@ public class OutlineyFeature : ScriptableRendererFeature {
 
   public override void Create() {
     int SobelOutRT = Shader.PropertyToID("_sobelOutRT");
+    int SobelOutOSPosRT = Shader.PropertyToID("_sobelOSPosRT");
     _idPass = new IDPass("ID Pass", _layerMask);
-    _sobelishPass = new SobelishPass("Sobelish Pass", SobelOutRT) {
-      _sobelishMaterial = _sobelishMaterial
+    _sobelishPass = new SobelishPass("Sobelish Pass", SobelOutRT, SobelOutOSPosRT) {
+      _sobelishMaterial = _sobelishMaterial,
+      _osMaterial = _osMaterial
     };
     // _strokeQuadPass = new StrokeQuadPass(_strokeyQuadsComputeShader, "Strokey Quads Pass", SobelOutRT, _poissonTex) {
     //   _quadMaterial = _strokeQuadMaterial,

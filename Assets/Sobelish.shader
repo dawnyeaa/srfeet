@@ -1,6 +1,5 @@
 Shader "Custom/Sobelish" {
   Properties {
-    _MainTex ("Texture", 2D) = "white" {}
   }
 
   SubShader {
@@ -17,6 +16,7 @@ Shader "Custom/Sobelish" {
       HLSLPROGRAM
 
       #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+      #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
       #pragma vertex vert
       #pragma fragment frag
@@ -24,6 +24,22 @@ Shader "Custom/Sobelish" {
       TEXTURE2D(_MainTex);
       SAMPLER(sampler_MainTex);
       float4 _MainTex_TexelSize;
+      
+      TEXTURE2D(_OSTex);
+      SAMPLER(sampler_OSTex);
+      float4 _OSTex_TexelSize;
+
+      float2 offset[9] = {
+        float2(0, 0),
+        float2(-1, -1),
+        float2(0, -1),
+        float2(1, -1),
+        float2(-1, 0),
+        float2(1, 0),
+        float2(-1, 1),
+        float2(0, 1),
+        float2(1, 1)
+      };
 
       struct VertexInput {
         float4 positionOS : POSITION;
@@ -67,6 +83,32 @@ Shader "Custom/Sobelish" {
         return float2(mag, (atan2(y, x)/(2*PI))+0.5);
       }
 
+      float3 objectSpacePos(float2 uv, float stepx, float stepy) {
+        float depthValues[9] = {
+          SampleSceneDepth(uv),
+          SampleSceneDepth(uv + half2(-stepx, -stepy)),
+          SampleSceneDepth(uv + half2(0, -stepy)),
+          SampleSceneDepth(uv + half2(stepx, -stepy)),
+          SampleSceneDepth(uv + half2(-stepx, 0)),
+          SampleSceneDepth(uv + half2(stepx, 0)),
+          SampleSceneDepth(uv + half2(-stepx, stepy)),
+          SampleSceneDepth(uv + half2(0, stepy)),
+          SampleSceneDepth(uv + half2(stepx, stepy))
+        };
+
+        float bestDepth = 1000;
+        int bestDepthIndex = 0;
+        for (int i = 0; i < 9; ++i) {
+          if (depthValues[i] > 0 && depthValues[i] < bestDepth) {
+            bestDepth = depthValues[i];
+            bestDepthIndex = i;
+          }
+        }
+
+        float3 osPos = SAMPLE_TEXTURE2D(_OSTex, sampler_OSTex, uv + offset[bestDepthIndex] * float2(stepx, stepy)).xyz;
+        return osPos;
+      }
+
       VertexOutput vert(VertexInput i) {
         VertexOutput o;
 
@@ -77,9 +119,10 @@ Shader "Custom/Sobelish" {
         return o;
       }
 
-      half4 frag(VertexOutput i) : SV_TARGET {
+      void frag(VertexOutput i, out half4 GRT0 : SV_TARGET0, out float3 GRT1 : SV_TARGET1) {
         half4 color = half4(actuallySobel(i.uv, _MainTex_TexelSize.x, _MainTex_TexelSize.y), 0, 0);
-        return color;
+        GRT0 = color;
+        GRT1 = objectSpacePos(i.uv, _MainTex_TexelSize.x, _MainTex_TexelSize.y);
       }
 
       ENDHLSL

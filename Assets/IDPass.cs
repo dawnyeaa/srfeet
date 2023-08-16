@@ -27,7 +27,7 @@ public class IDPass : ScriptableRenderPass {
   public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
     RenderTextureDescriptor blitTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
     blitTargetDescriptor.colorFormat = RenderTextureFormat.ARGB32;
-    blitTargetDescriptor.msaaSamples = 4;
+    // blitTargetDescriptor.msaaSamples = 4;
     cmd.GetTemporaryRT(_renderTargetId, blitTargetDescriptor);
     _renderTargetIdentifier = new RenderTargetIdentifier(_renderTargetId);
     ConfigureTarget(_renderTargetIdentifier);

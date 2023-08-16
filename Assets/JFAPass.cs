@@ -43,6 +43,7 @@ public class JFAPass : ScriptableRenderPass {
     var maxPassSize = (int)Mathf.Pow(2,passes);
 
     using (new ProfilingScope(cmd, _profilingSampler)) {
+
       cmd.Blit(_inputRenderTargetIdentifier, _tmpRT1, _jfaMaterial, 0);
 
       for (int jump = maxPassSize; jump >= 1; jump /= 2) {
@@ -56,9 +57,10 @@ public class JFAPass : ScriptableRenderPass {
       }
 
       cmd.Blit(renderingData.cameraData.renderer.cameraColorTarget, _tmpRT2);
-
+      
       cmd.SetGlobalTexture(Shader.PropertyToID("_Screen"), _tmpRT2);
       cmd.SetGlobalFloat(Shader.PropertyToID("_lineThickness"), _outlineWidth);
+      
       // final pass
       cmd.Blit(_tmpRT1, renderingData.cameraData.renderer.cameraColorTarget, _jfaMaterial, 2);
     }
