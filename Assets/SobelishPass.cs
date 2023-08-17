@@ -6,6 +6,7 @@ public class SobelishPass : ScriptableRenderPass {
   // the material with our sobelish shader on it
   public Material _sobelishMaterial;
   public Material _osMaterial;
+  public Material _osSobelBlurMaterial;
   private ProfilingSampler _profilingSampler;
   // the render target that we're grabbing the id map from
   private static readonly int _idMapId = Shader.PropertyToID("_IDPassRT");
@@ -39,9 +40,11 @@ public class SobelishPass : ScriptableRenderPass {
 
   public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
     cmd.GetTemporaryRT(_renderTargetIdSobel, cameraTextureDescriptor);
-    cmd.GetTemporaryRT(_renderTargetIdSobelOS, cameraTextureDescriptor);
+    RenderTextureDescriptor osSobelTexDesc = cameraTextureDescriptor;
+    osSobelTexDesc.colorFormat = RenderTextureFormat.ARGB32;
+    cmd.GetTemporaryRT(_renderTargetIdSobelOS, osSobelTexDesc);
     cmd.GetTemporaryRT(Shader.PropertyToID("_depthBufTemp"), cameraTextureDescriptor);
-    cmd.GetTemporaryRT(_osMapId, cameraTextureDescriptor);
+    cmd.GetTemporaryRT(_osMapId, osSobelTexDesc);
     _renderTargetIdentifiers = new RenderTargetIdentifier[2];
     _renderTargetIdentifiers[0] = new RenderTargetIdentifier(_renderTargetIdSobel);
     _renderTargetIdentifiers[1] = new RenderTargetIdentifier(_renderTargetIdSobelOS);
@@ -75,6 +78,10 @@ public class SobelishPass : ScriptableRenderPass {
       cmd.SetGlobalTexture(Shader.PropertyToID("_MainTex"), _idMapIdentifier);
       cmd.SetGlobalTexture(_osMapId, _osMap);
       cmd.DrawMesh(RenderingUtils.fullscreenMesh, Matrix4x4.identity, _sobelishMaterial);
+
+      // blur the sobel OS position a little
+      // cmd.Blit(_renderTargetIdentifiers[1], _osMap, _osSobelBlurMaterial, 0);
+      // cmd.Blit(_osMap, _renderTargetIdentifiers[1], _osSobelBlurMaterial, 1);
     }
 
     context.ExecuteCommandBuffer(cmd);

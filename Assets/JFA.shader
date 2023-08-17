@@ -138,23 +138,13 @@ Shader "Custom/JFA" {
 
       #pragma vertex vert
       #pragma fragment frag
-
-      float _lineThickness;
-      float _softness;
       
       TEXTURE2D(_MainTex);
       SAMPLER(sampler_MainTex);
       float4 _MainTex_TexelSize;
       
-      TEXTURE2D(_Screen);
-      SAMPLER(sampler_Screen);
-      float4 _Screen_TexelSize;
-      
       TEXTURE2D(_OSSobel);
       SAMPLER(sampler_OSSobel);
-      
-      TEXTURE3D(_ModulateTex);
-      SAMPLER(sampler_ModulateTex);
 
       struct VertexInput {
         float4 positionOS : POSITION;
@@ -182,15 +172,15 @@ Shader "Custom/JFA" {
         return o;
       }
 
-      half4 frag(VertexOutput i) : SV_TARGET {
+      float4 frag(VertexOutput i) : SV_TARGET {
         float aspect = _MainTex_TexelSize.z*_MainTex_TexelSize.y;
         float4 seedinfo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
         float2 seedpos = seedinfo.xy;
         float3 sobelOSPos = SAMPLE_TEXTURE2D(_OSSobel, sampler_OSSobel, seedpos);
         float mask = step(0.1, seedinfo.a);
         float2 pos = i.uv;
-        float stepy = step(ScreenDist(pos - seedpos)+(SAMPLE_TEXTURE3D(_ModulateTex, sampler_ModulateTex, sobelOSPos)*0.02).r, _lineThickness*_MainTex_TexelSize.y);
-        return lerp(SAMPLE_TEXTURE2D(_Screen, sampler_Screen, i.uv), float4(0, 0, 0, 1), stepy*mask);
+        // my output here is gonna be osPos sampled at seedpos for xyz, and ScreenDist(pos - seedpos) in a
+        return lerp(float4(0, 0, 0, 100), float4(sobelOSPos, ScreenDist(pos - seedpos)), mask);
       }
 
       ENDHLSL

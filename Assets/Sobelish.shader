@@ -83,7 +83,7 @@ Shader "Custom/Sobelish" {
         return float2(mag, (atan2(y, x)/(2*PI))+0.5);
       }
 
-      float3 objectSpacePos(float2 uv, float stepx, float stepy, float sobelValue) {
+      float4 objectSpacePos(float2 uv, float stepx, float stepy, float sobelValue) {
         float depthValues[9] = {
           SampleSceneDepth(uv),
           SampleSceneDepth(uv + half2(-stepx, -stepy)),
@@ -96,36 +96,37 @@ Shader "Custom/Sobelish" {
           SampleSceneDepth(uv + half2(stepx, stepy))
         };
 
-        float2 uvOffsetAvg = float2(0, 0);
+        // float2 uvOffsetAvg = float2(0, 0);
 
-        if (sobelValue > 0) {
-          float inflectionDepth = depthValues[0] > 0 ? depthValues[0] : 3.402823466e+38F;
-          float2 uvOffsetTotal = float2(0, 0);
-          int closerDepthsCount = 0;
-          for (int i = 1; i < 9; ++i) {
-            if (depthValues[i] > 0 && depthValues[i] <= inflectionDepth) {
-              uvOffsetTotal += uvOffset[i];
-              ++closerDepthsCount;
-            }
-          }
-          if (closerDepthsCount > 0) {
-            uvOffsetAvg = uvOffsetTotal/closerDepthsCount;
-          }
-        }
-
-        // float bestDepth = 1000;
-        // int bestDepthIndex = 0;
-        // for (int i = 1; i < 9; ++i) {
-        //   if (depthValues[i] > 0 && depthValues[i] < bestDepth) {
-        //     bestDepth = depthValues[i];
-        //     bestDepthIndex = i;
+        // if (sobelValue > 0) {
+        //   float inflectionDepth = depthValues[0] > 0 ? depthValues[0] : 3.402823466e+38F;
+        //   float2 uvOffsetTotal = float2(0, 0);
+        //   int closerDepthsCount = 0;
+        //   for (int i = 1; i < 9; ++i) {
+        //     if (depthValues[i] > 0 && depthValues[i] <= inflectionDepth) {
+        //       uvOffsetTotal += uvOffset[i];
+        //       ++closerDepthsCount;
+        //     }
+        //   }
+        //   if (closerDepthsCount > 0) {
+        //     uvOffsetAvg = uvOffsetTotal/closerDepthsCount;
         //   }
         // }
 
-        // float3 osPos = SAMPLE_TEXTURE2D(_OSTex, sampler_OSTex, uv + uvOffset[bestDepthIndex] * float2(stepx, stepy)).xyz;
+        // float3 osPos = SAMPLE_TEXTURE2D(_OSTex, sampler_OSTex, uv + uvOffsetAvg * float2(stepx, stepy)).xyz;
 
-        float3 osPos = SAMPLE_TEXTURE2D(_OSTex, sampler_OSTex, uv + uvOffsetAvg * float2(stepx, stepy)).xyz;
-        return osPos;
+        float bestDepth = 1000;
+        int bestDepthIndex = 0;
+        for (int i = 1; i < 9; ++i) {
+          if (depthValues[i] > 0 && depthValues[i] < bestDepth) {
+            bestDepth = depthValues[i];
+            bestDepthIndex = i;
+          }
+        }
+
+        float3 osPos = SAMPLE_TEXTURE2D(_OSTex, sampler_OSTex, uv + uvOffset[bestDepthIndex] * float2(stepx, stepy)).xyz;
+        
+        return float4(osPos, sobelValue);
       }
 
       VertexOutput vert(VertexInput i) {
@@ -138,7 +139,7 @@ Shader "Custom/Sobelish" {
         return o;
       }
 
-      void frag(VertexOutput i, out half4 GRT0 : SV_TARGET0, out float3 GRT1 : SV_TARGET1) {
+      void frag(VertexOutput i, out half4 GRT0 : SV_TARGET0, out float4 GRT1 : SV_TARGET1) {
         half4 color = half4(actuallySobel(i.uv, _MainTex_TexelSize.x, _MainTex_TexelSize.y), 0, 0);
         GRT0 = color;
         GRT1 = objectSpacePos(i.uv, _MainTex_TexelSize.x, _MainTex_TexelSize.y, color.r);

@@ -14,6 +14,8 @@ public class OutlineyFeature : ScriptableRendererFeature {
   [SerializeField] Material _sobelBlitMaterial;
   [SerializeField] Material _jfaMaterial;
   [SerializeField] Material _osMaterial;
+  [SerializeField] Material _osSobelBlurMaterial;
+  [SerializeField] Material _dfOutlineMaterial;
   [SerializeField] [Min(1)] int _outlineWidth;
   // [SerializeField] ComputeShader _jfaComputeShader;
   [SerializeField] ComputeShader _strokeyQuadsComputeShader;
@@ -32,7 +34,9 @@ public class OutlineyFeature : ScriptableRendererFeature {
     //   _sobelBlitMat = _sobelBlitMaterial
     // };
     _jfaPass = new JFAPass(_outlineWidth, "JFA Pass", SobelOutRT, SobelOutOSPosRT) {
-      _jfaMaterial = _jfaMaterial
+      _jfaMaterial = _jfaMaterial,
+      _boxBlurMaterial = _osSobelBlurMaterial,
+      _dfOutlineMaterial = _dfOutlineMaterial
     };
   }
 

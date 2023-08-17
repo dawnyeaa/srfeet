@@ -4,6 +4,8 @@ using UnityEngine.Rendering.Universal;
 public class JFAPass : ScriptableRenderPass {
   ProfilingSampler _profilingSampler;
   public Material _jfaMaterial;
+  public Material _boxBlurMaterial;
+  public Material _dfOutlineMaterial;
   private int _inputRenderTargetId;
   private int _osSobelTexId;
   private RenderTargetIdentifier _inputRenderTargetIdentifier;
@@ -58,14 +60,20 @@ public class JFAPass : ScriptableRenderPass {
         (_tmpRT2, _tmpRT1) = (_tmpRT1, _tmpRT2);
       }
 
-      cmd.Blit(renderingData.cameraData.renderer.cameraColorTarget, _tmpRT2);
-      
-      cmd.SetGlobalTexture(Shader.PropertyToID("_Screen"), _tmpRT2);
       cmd.SetGlobalTexture(Shader.PropertyToID("_OSSobel"), _osSobelTex);
-      cmd.SetGlobalFloat(Shader.PropertyToID("_lineThickness"), _outlineWidth);
       
-      // final pass
-      cmd.Blit(_tmpRT1, renderingData.cameraData.renderer.cameraColorTarget, _jfaMaterial, 2);
+      // create the distance field
+      cmd.Blit(_tmpRT1, _tmpRT2, _jfaMaterial, 2);
+
+      // blur the distance field
+      cmd.Blit(_tmpRT2, _tmpRT1, _boxBlurMaterial, 0);
+      cmd.Blit(_tmpRT1, _tmpRT2, _boxBlurMaterial, 1);
+
+      // turn it into outline on screen
+      cmd.Blit(renderingData.cameraData.renderer.cameraColorTarget, _tmpRT1);
+      cmd.SetGlobalTexture(Shader.PropertyToID("_Screen"), _tmpRT1);
+      cmd.SetGlobalFloat(Shader.PropertyToID("_lineThickness"), _outlineWidth);
+      cmd.Blit(_tmpRT2, renderingData.cameraData.renderer.cameraColorTarget, _dfOutlineMaterial);
     }
 
     context.ExecuteCommandBuffer(cmd);
