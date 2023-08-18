@@ -1,7 +1,6 @@
-Shader "Custom/BoxBlur" {
+Shader "OutlineyFeature/3BoxBlur" {
   Properties {
     _MainTex ("Texture", 2D) = "white" {}
-    _KernelSize("Kernel Size", Int) = 3
   }
 
   SubShader {

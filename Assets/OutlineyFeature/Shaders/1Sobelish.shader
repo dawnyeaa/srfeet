@@ -1,4 +1,4 @@
-Shader "Custom/Sobelish" {
+Shader "OutlineyFeature/1Sobelish" {
   Properties {
   }
 

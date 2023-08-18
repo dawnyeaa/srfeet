@@ -1,7 +1,6 @@
-Shader "Custom/JFA" {
+Shader "OutlineyFeature/2JFA" {
   Properties {
     _MainTex ("Texture", 2D) = "white" {}
-    _ModulateTex ("Modulation tex", 3D) = "black" {}
   }
 
   SubShader {
@@ -129,7 +128,7 @@ Shader "Custom/JFA" {
     }
 
     Pass {
-      Name "Outline"
+      Name "Finish"
       Tags { "LightMode" = "UniversalForward" }
 
       HLSLPROGRAM
@@ -173,7 +172,6 @@ Shader "Custom/JFA" {
       }
 
       float4 frag(VertexOutput i) : SV_TARGET {
-        float aspect = _MainTex_TexelSize.z*_MainTex_TexelSize.y;
         float4 seedinfo = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
         float2 seedpos = seedinfo.xy;
         float3 sobelOSPos = SAMPLE_TEXTURE2D(_OSSobel, sampler_OSSobel, seedpos);

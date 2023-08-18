@@ -1,4 +1,4 @@
-Shader "Custom/ThingoShader" {
+Shader "Example/ShaderWithIDPass" {
   Properties {
     _MainTex ("Texture", 2D) = "white" {}
     _ShadowColor ("Shadow Color", Color) = (1, 1, 1, 1)
@@ -105,6 +105,7 @@ Shader "Custom/ThingoShader" {
       struct VertexOutput {
         float4 positionCS : SV_POSITION;
         float2 uv         : TEXCOORD0;
+        float3 positionOS : TEXCOORD1;
       };
 
       VertexOutput vert(VertexInput i) {
@@ -114,17 +115,19 @@ Shader "Custom/ThingoShader" {
 
         o.positionCS = vertexInput.positionCS;
         o.uv = i.uv;
+        o.positionOS = i.positionOS.xyz;
 
         return o;
       }
 
-      half4 frag(VertexOutput i) : SV_TARGET {
+      void frag(VertexOutput i, out half4 ID : SV_TARGET0, out float3 OSPos : SV_TARGET1) {
         half4 color;
         float4 idTex = SAMPLE_TEXTURE2D(_IDTex, sampler_IDTex, i.uv);
 
         color.rgb = idTex.rgb;
         color.a = 1;
-        return color;
+        ID = color;
+        OSPos = i.positionOS;
       }
 
       ENDHLSL

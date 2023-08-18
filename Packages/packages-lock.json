@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.actioncode.attributes": {
+      "version": "https://github.com/HyagoOliveira/Attributes.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "ffd15fc12b063b9516d008065b220cc85c0446a0"
+    },
     "com.unity.burst": {
       "version": "1.7.3",
       "depth": 1,

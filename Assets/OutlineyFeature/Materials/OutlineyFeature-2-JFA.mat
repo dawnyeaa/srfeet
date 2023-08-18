@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: BoxBlur
-  m_Shader: {fileID: 4800000, guid: c69da3024f8d63a488781fb3da7f9970, type: 3}
+  m_Name: OutlineyFeature-2-JFA
+  m_Shader: {fileID: 4800000, guid: 34d42cdcfb90c934b8ee3b51417fbddf, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -21,11 +21,14 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 589fa69beb4158f4cbda0d785faabbad, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _ModulateTex:
+        m_Texture: {fileID: 11700000, guid: db1db987dd987414ca518f660d99e1fe, type: 3}
+        m_Scale: {x: 5, y: 5}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
-    m_Floats:
-    - _KernelSize: 99.3
+    m_Floats: []
     m_Colors: []
   m_BuildTextureStacks: []

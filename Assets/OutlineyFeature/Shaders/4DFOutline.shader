@@ -1,13 +1,6 @@
-Shader "Custome/DFOutline" {
+Shader "OutlineyFeature/4DFOutline" {
   Properties {
     _MainTex ("Texture", 2D) = "white" {}
-    _ModulateTex ("Modulation Texture", 3D) = "black" {}
-    _ModulateTex_S ("Modulation Tex Scale", Float) = 1
-    _ModulateTex_T ("Modulation Tex Offset", Vector) = (0, 0, 0)
-    _ModulationStrength ("Modulation Strength", Float) = 0.01
-    _LineColor ("Line Color", Color) = (0, 0, 0, 1)
-    _FPS ("FPS", Float) = 6
-    _LineBoilOffsetDir ("Line Boil Offset Direction", Vector) = (0, 1.1, 1.3)
   }
 
   SubShader {
@@ -29,7 +22,7 @@ Shader "Custome/DFOutline" {
       #pragma fragment frag
 
       float _lineThickness;
-      float _softness;
+      float _Softness;
 
       float4 _LineColor;
       float _ModulationStrength;
@@ -76,8 +69,9 @@ Shader "Custome/DFOutline" {
         float mask = step(mainTex.a, 99);
         float4 screen = SAMPLE_TEXTURE2D(_Screen, sampler_Screen, i.uv);
         float secondsPerFrame = 1/_FPS;
+        float softness = _Softness + 0.0001;
         float modulation = (SAMPLE_TEXTURE3D(_ModulateTex, sampler_ModulateTex, (modulateTexPos*_ModulateTex_S)+_ModulateTex_T+floor(_Time.y/secondsPerFrame)*_LineBoilOffsetDir).r*2)-1;
-        float outlineStep = step(mainTex.a+(modulation*_ModulationStrength), _lineThickness*_MainTex_TexelSize.y);
+        float outlineStep = 1-smoothstep((_lineThickness-softness)*_MainTex_TexelSize.y, (_lineThickness+softness)*_MainTex_TexelSize.y, mainTex.a+(modulation*_ModulationStrength));
         return lerp(screen, _LineColor, outlineStep*mask*_LineColor.a);
       }
       ENDHLSL
