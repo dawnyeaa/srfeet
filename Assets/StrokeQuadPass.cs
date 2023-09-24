@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -12,21 +13,34 @@ public class StrokeQuadPass : ScriptableRenderPass {
   public Material _sobelBlitMat;
   // the id that we're gonna store for our input and output render target
   private int _inputRenderTargetId;
+  private int _voronoiTexId;
   // an identifier SPECIFICALLY for the command buffer
   private RenderTargetIdentifier _inputRenderTargetIdentifier;
+  private RenderTargetIdentifier _voronoiTexIdentifier;
   private int _quadPointsId;
   private int _strokeyQuadsKernel;
+  private Vector4[] _poissonPointsArray;
 
-  private Texture2D _poissonTex;
-  public StrokeQuadPass(ComputeShader strokeQuadCompute, string profilerTag, int renderTargetId, Texture2D poissonTex) {
+  private ComputeBuffer _poissonPoints;
+
+  private int _scanSize;
+
+  public StrokeQuadPass(ComputeShader strokeQuadCompute, string profilerTag, int renderTargetId, int voronoiTexId, PoissonArrangementObject poissonPoints, int scanSize) {
     _profilingSampler = new ProfilingSampler(profilerTag);
     _inputRenderTargetId = renderTargetId;
+    _voronoiTexId = voronoiTexId;
     _strokeQuadCompute = strokeQuadCompute;
-    _poissonTex = poissonTex;
+
+    _scanSize = scanSize;
+
+    _poissonPointsArray = poissonPoints.tiledPoints4;
 
     _strokeyQuadsKernel = _strokeQuadCompute.FindKernel("StrokeyQuads");
 
     _quadPointsId = Shader.PropertyToID("_quadPoints");
+
+    _poissonPoints = new ComputeBuffer(_poissonPointsArray.Length, Marshal.SizeOf(typeof(Vector4)));
+    _poissonPoints.SetData(_poissonPointsArray);
 
     _quadPoints = new ComputeBuffer(1000, sizeof(uint)*2 + sizeof(float), ComputeBufferType.Append);
 
@@ -47,6 +61,7 @@ public class StrokeQuadPass : ScriptableRenderPass {
   }
   public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
     _inputRenderTargetIdentifier = new RenderTargetIdentifier(_inputRenderTargetId);
+    _voronoiTexIdentifier = new RenderTargetIdentifier(_voronoiTexId);
   }
 
   public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
@@ -58,13 +73,17 @@ public class StrokeQuadPass : ScriptableRenderPass {
     
     using (new ProfilingScope(cmd, _profilingSampler)) {
       cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, _inputRenderTargetId, _inputRenderTargetIdentifier);
-      cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, Shader.PropertyToID("_poissonTex"), _poissonTex);
-      cmd.SetComputeFloatParam(_strokeQuadCompute, Shader.PropertyToID("_poissonSize"), _poissonTex.width);
+      cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, "_voronoiTex", _voronoiTexIdentifier);
+      cmd.SetComputeBufferParam(_strokeQuadCompute, _strokeyQuadsKernel, Shader.PropertyToID("_poissonPoints"), _poissonPoints);
+      cmd.SetComputeIntParam(_strokeQuadCompute, "_scanSize", _scanSize);
+      cmd.SetComputeIntParam(_strokeQuadCompute, "_RTWidth", camRTDesc.width);
+      cmd.SetComputeIntParam(_strokeQuadCompute, "_RTHeight", camRTDesc.height);
+
       cmd.SetComputeBufferParam(_strokeQuadCompute, _strokeyQuadsKernel, _quadPointsId, _quadPoints);
 
       cmd.DispatchCompute(_strokeQuadCompute, _strokeyQuadsKernel,
-                          Mathf.CeilToInt(camRTDesc.width / 32),
-                          Mathf.CeilToInt(camRTDesc.height / 32),
+                          Mathf.CeilToInt(_poissonPointsArray.Length / 64f),
+                          1,
                           1);
       
       cmd.CopyCounterValue(_quadPoints, _drawArgsBuffer, sizeof(uint));

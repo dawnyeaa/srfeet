@@ -1,9 +1,16 @@
 #include "StrokePoint.hlsl"
 
-Texture2D<float2> _sobelOutRT;
-Texture2D<float> _poissonTex;
+#define FLT_MAX 3.402823466e+38
 
-float _poissonSize;
+Texture2D<float2> _sobelOutRT;
+Texture2D<float3> _voronoiTex;
+
+uint _RTWidth;
+uint _RTHeight;
+
+StructuredBuffer<float4> _poissonPoints;
+
+uint _scanSize;
 
 AppendStructuredBuffer<StrokePoint> _quadPoints;
 
@@ -15,11 +22,40 @@ StrokePoint MakeStrokePoint(int2 positionTexel, float angle) {
 }
 
 #pragma kernel StrokeyQuads
-[numthreads(32,32,1)]
+[numthreads(64,1,1)]
 void StrokeyQuads (uint3 id : SV_DispatchThreadID) {
-  float color = _sobelOutRT[id.xy].x * _poissonTex[id.xy % _poissonSize];
+  float4 poissonPoint = _poissonPoints[id.x];
+  int2 mainPoint = int2(poissonPoint.x, poissonPoint.y);
 
-  if (color > 0.9999) {
-    _quadPoints.Append(MakeStrokePoint(id.xy, _sobelOutRT[id.xy].y));
+  // check the starting point just in case
+  float mask = _sobelOutRT[mainPoint].x;
+
+  if (mask > 0.9999) {
+    _quadPoints.Append(MakeStrokePoint(mainPoint, _sobelOutRT[mainPoint].y));
+    return;
+  }
+
+  int scanRadius = (int)(_scanSize/2.0);
+
+  float minDistance = FLT_MAX;
+  int2 bestPoint = int2(0, 0);
+
+  float currentDistance;
+
+  for (int i = mainPoint.x-scanRadius; i <= mainPoint.x+scanRadius; ++i) {
+    for (int j = mainPoint.y-scanRadius; j <= mainPoint.y+scanRadius; ++j) {
+      if (i < 0 || j < 0 || i >= _RTWidth || j >= _RTHeight) continue;
+      mask = _sobelOutRT[int2(i, j)].x;
+      if (mask <= 0.9999) continue;
+      currentDistance = _voronoiTex[int2(i, j)].b;
+      if (currentDistance < minDistance) {
+        minDistance = currentDistance;
+        bestPoint = int2(i, j);
+      }
+    }
+  }
+
+  if (minDistance < FLT_MAX) {
+    _quadPoints.Append(MakeStrokePoint(bestPoint, _sobelOutRT[bestPoint].y));
   }
 }
