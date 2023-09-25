@@ -20,6 +20,7 @@ public class StrokeQuadPass : ScriptableRenderPass {
   private int _quadPointsId;
   private int _strokeyQuadsKernel;
   private Vector4[] _poissonPointsArray;
+  private PoissonArrangementObject _poissonPointsArrangement;
 
   private ComputeBuffer _poissonPoints;
 
@@ -33,14 +34,12 @@ public class StrokeQuadPass : ScriptableRenderPass {
 
     _scanSize = scanSize;
 
-    _poissonPointsArray = poissonPoints.tiledPoints4;
+    _poissonPointsArrangement = poissonPoints;
+    // _poissonPointsArray = poissonPoints.tiledPoints4;
 
     _strokeyQuadsKernel = _strokeQuadCompute.FindKernel("StrokeyQuads");
 
     _quadPointsId = Shader.PropertyToID("_quadPoints");
-
-    _poissonPoints = new ComputeBuffer(_poissonPointsArray.Length, Marshal.SizeOf(typeof(Vector4)));
-    _poissonPoints.SetData(_poissonPointsArray);
 
     _quadPoints = new ComputeBuffer(1000, sizeof(uint)*2 + sizeof(float), ComputeBufferType.Append);
 
@@ -62,6 +61,8 @@ public class StrokeQuadPass : ScriptableRenderPass {
   public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
     _inputRenderTargetIdentifier = new RenderTargetIdentifier(_inputRenderTargetId);
     _voronoiTexIdentifier = new RenderTargetIdentifier(_voronoiTexId);
+
+    _poissonPoints = new ComputeBuffer(_poissonPointsArrangement.tiledPoints4.Length, Marshal.SizeOf(typeof(Vector4)));
   }
 
   public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
@@ -70,6 +71,7 @@ public class StrokeQuadPass : ScriptableRenderPass {
 
     RenderTextureDescriptor camRTDesc = renderingData.cameraData.cameraTargetDescriptor;
     RenderTexture camRT = renderingData.cameraData.camera.activeTexture;
+    _poissonPoints.SetData(_poissonPointsArrangement.tiledPoints4);
     
     using (new ProfilingScope(cmd, _profilingSampler)) {
       cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, _inputRenderTargetId, _inputRenderTargetIdentifier);
@@ -82,7 +84,7 @@ public class StrokeQuadPass : ScriptableRenderPass {
       cmd.SetComputeBufferParam(_strokeQuadCompute, _strokeyQuadsKernel, _quadPointsId, _quadPoints);
 
       cmd.DispatchCompute(_strokeQuadCompute, _strokeyQuadsKernel,
-                          Mathf.CeilToInt(_poissonPointsArray.Length / 64f),
+                          Mathf.CeilToInt(_poissonPointsArrangement.tiledPoints4.Length / 64f),
                           1,
                           1);
       

@@ -1,8 +1,9 @@
 #include "StrokePoint.hlsl"
 
 #define FLT_MAX 3.402823466e+38
+#define TAU 6.2831853072; 
 
-Texture2D<float2> _sobelOutRT;
+Texture2D<float3> _sobelOutRT;
 Texture2D<float3> _voronoiTex;
 
 uint _RTWidth;
@@ -51,7 +52,6 @@ void StrokeyQuads (uint3 id : SV_DispatchThreadID) {
       if (i < 0 || j < 0 || i >= _RTWidth || j >= _RTHeight) continue;
       mask = _sobelOutRT[int2(i, j)].x;
       if (mask <= 0.9999) continue;
-      // currentDistance = _voronoiTex[int2(i, j)].b;
       int2 offset = mainPoint-int2(i, j);
       currentDistance = mag(offset);
       if (currentDistance < minDistance) {
@@ -62,6 +62,8 @@ void StrokeyQuads (uint3 id : SV_DispatchThreadID) {
   }
 
   if (minDistance < FLT_MAX) {
-    _quadPoints.Append(MakeStrokePoint(bestPoint, 0));
+    float2 facingVector = (_sobelOutRT[bestPoint].yz*2)-1;
+    float angle = atan2(facingVector.y, facingVector.x)/TAU;
+    _quadPoints.Append(MakeStrokePoint(bestPoint, angle));
   }
 }

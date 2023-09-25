@@ -9,6 +9,7 @@ public class VoronoiPass : ScriptableRenderPass {
   private int _voronoiRenderTargetId;
   private PoissonArrangementObject _poissonPoints;
   private Vector4[] _modifiedSeedPoints;
+  private Vector4[] _seedPoints;
   private const int SEEDPOINTSSIZE = 2048;
 
   private RenderTargetIdentifier _voronoiRenderTarget;
@@ -16,11 +17,13 @@ public class VoronoiPass : ScriptableRenderPass {
   private Vector4[] _coneColors;
   private Matrix4x4[] _coneMatrices;
 
-  public VoronoiPass(string profilerTag, int voronoiRenderTargetId, ref PoissonArrangementObject poissonPoints) {
+  public VoronoiPass(string profilerTag, int voronoiRenderTargetId, PoissonArrangementObject poissonPoints) {
     _profilingSampler = new ProfilingSampler(profilerTag);
 
     _voronoiRenderTargetId = voronoiRenderTargetId;
     _poissonPoints = poissonPoints;
+
+    _seedPoints = poissonPoints.tiledPoints4;
 
     renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
   }
@@ -28,30 +31,6 @@ public class VoronoiPass : ScriptableRenderPass {
   public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
     RenderTextureDescriptor desc = renderingData.cameraData.cameraTargetDescriptor;
     desc.colorFormat = RenderTextureFormat.ARGBFloat;
-
-    Vector4[] seedPoints = _poissonPoints.points4;
-
-    var xTileAmount = Mathf.CeilToInt(desc.width/(float)SEEDPOINTSSIZE);
-    var yTileAmount = Mathf.CeilToInt(desc.height/(float)SEEDPOINTSSIZE);
-
-    _modifiedSeedPoints = new Vector4[xTileAmount*yTileAmount*seedPoints.Length];
-
-    Vector4 right = new(0, 1);
-    Vector4 up = new(1, 0);
-
-    Vector4 point;
-    for (int i = 0; i < seedPoints.Length; ++i) {
-      point = seedPoints[i]*4;
-      
-      for (int xTile = 0; xTile < xTileAmount; ++xTile) {
-        _modifiedSeedPoints[xTile*seedPoints.Length + i] = point + SEEDPOINTSSIZE * xTile * right;
-        for (int yTile = 1; yTile < yTileAmount; ++yTile) {
-          _modifiedSeedPoints[xTileAmount*seedPoints.Length*yTile+xTile*seedPoints.Length + i] = point + SEEDPOINTSSIZE * yTile * up + SEEDPOINTSSIZE * xTile * right;
-        }
-      }
-    }
-
-    _poissonPoints.tiledPoints4 = _modifiedSeedPoints;
 
     cmd.GetTemporaryRT(_voronoiRenderTargetId, desc);
 
@@ -65,19 +44,19 @@ public class VoronoiPass : ScriptableRenderPass {
     var cmd = CommandBufferPool.Get();
 
     using (new ProfilingScope(cmd, _profilingSampler)) {
-      var batchCount = Mathf.CeilToInt(_modifiedSeedPoints.Length / 511f);
+      var batchCount = Mathf.CeilToInt(_seedPoints.Length / 511f);
       uint id = 0;
 
       for (int batch = 0; batch < batchCount; ++batch) {
-        var batchSize = (batch == batchCount-1) ? _modifiedSeedPoints.Length % 511 : 511;
+        var batchSize = (batch == batchCount-1) ? _seedPoints.Length % 511 : 511;
         MaterialPropertyBlock properties = new();
         _coneColors = new Vector4[batchSize];
         _coneMatrices = new Matrix4x4[batchSize];
 
         for (int i = 0; i < batchSize; ++i) {
-          Vector3 position = _modifiedSeedPoints[batch*511 + i];
+          Vector3 position = _seedPoints[batch*511 + i];
           Quaternion rotation = Quaternion.identity;
-          Vector3 scale = new(100, 100, 1);
+          Vector3 scale = new(200, 200, 1);
 
           _coneMatrices[i] = Matrix4x4.TRS(position, rotation, scale);
           _coneColors[i] = new Vector4(id++, 0, 1, 1);

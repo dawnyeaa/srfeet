@@ -13,10 +13,12 @@ public class OutlineyFeature : ScriptableRendererFeature {
   [SerializeField] Material _sobelishMaterial;
   [SerializeField] Material _strokeQuadMaterial;
   [SerializeField] Material _sobelBlitMaterial;
+  [SerializeField] Material _boxBlurMaterial;
   [SerializeField] Mesh _voronoiConeMesh;
   [SerializeField] Material _voronoiConeMat;
   // [SerializeField] ComputeShader _jfaComputeShader;
   [SerializeField] ComputeShader _strokeyQuadsComputeShader;
+  [SerializeField] int _angleBlurSize = 3;
   [SerializeField] Texture2D _poissonTex;
   [SerializeField] PoissonArrangementObject _poissonPoints;
   [SerializeField] int _pointScanSize;
@@ -25,10 +27,11 @@ public class OutlineyFeature : ScriptableRendererFeature {
     int SobelOutRT = Shader.PropertyToID("_sobelOutRT");
     int VoronoiOutRT = Shader.PropertyToID("_voronoiOutRT");
     _idPass = new IDPass("ID Pass", _layerMask);
-    _sobelishPass = new SobelishPass("Sobelish Pass", SobelOutRT) {
-      _sobelishMaterial = _sobelishMaterial
+    _sobelishPass = new SobelishPass("Sobelish Pass", SobelOutRT, _angleBlurSize) {
+      _sobelishMaterial = _sobelishMaterial,
+      _boxBlurMaterial = _boxBlurMaterial
     };
-    _voronoiPass = new VoronoiPass("Voronoi Pass", VoronoiOutRT, ref _poissonPoints) {
+    _voronoiPass = new VoronoiPass("Voronoi Pass", VoronoiOutRT, _poissonPoints) {
       _voronoiConeMesh = _voronoiConeMesh,
       _voronoiConeMat = _voronoiConeMat
     };

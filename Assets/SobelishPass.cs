@@ -5,6 +5,7 @@ using UnityEngine.Rendering.Universal;
 public class SobelishPass : ScriptableRenderPass {
   // the material with our sobelish shader on it
   public Material _sobelishMaterial;
+  public Material _boxBlurMaterial;
   private ProfilingSampler _profilingSampler;
   // the render target that we're grabbing the id map from
   private static readonly int _idMapId = Shader.PropertyToID("_IDPassRT");
@@ -14,24 +15,35 @@ public class SobelishPass : ScriptableRenderPass {
   private RenderTargetIdentifier _idMapIdentifier;
   private RenderTargetIdentifier _renderTargetIdentifier;
 
-  public SobelishPass(string profilerTag, int renderTargetId) {
+  private static readonly int _tmpId = Shader.PropertyToID("_tmpRT");
+  private RenderTargetIdentifier _tmpRT;
+
+  private int _angleBlurSize;
+
+  public SobelishPass(string profilerTag, int renderTargetId, int angleBlurSize) {
     // set up the profiler so it has a slot in there
     _profilingSampler = new ProfilingSampler(profilerTag);
     _renderTargetId = renderTargetId;
+
+    _angleBlurSize = angleBlurSize;
 
     // i get to choose when this pass happens!
     renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
   }
 
   public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData) {
-    _idMapIdentifier = new RenderTargetIdentifier(_idMapId);
-  }
+    var desc = renderingData.cameraData.cameraTargetDescriptor;
 
-  public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor) {
-    cmd.GetTemporaryRT(_renderTargetId, cameraTextureDescriptor);
+    _idMapIdentifier = new RenderTargetIdentifier(_idMapId);
+
+    cmd.GetTemporaryRT(_renderTargetId, desc);
     _renderTargetIdentifier = new RenderTargetIdentifier(_renderTargetId);
     
+    cmd.GetTemporaryRT(_tmpId, desc);
+    _tmpRT = new RenderTargetIdentifier(_tmpId);
+    
     ConfigureTarget(_renderTargetIdentifier);
+    ConfigureClear(ClearFlag.Color, Color.clear);
   }
 
   public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
@@ -40,15 +52,22 @@ public class SobelishPass : ScriptableRenderPass {
 
     CommandBuffer cmd = CommandBufferPool.Get();
     using (new ProfilingScope(cmd, _profilingSampler)) {
-      cmd.SetRenderTarget(_renderTargetIdentifier);
-      cmd.ClearRenderTarget(true, true, Color.clear);
-
       cmd.Blit(_idMapIdentifier, _renderTargetIdentifier, _sobelishMaterial);
+
+      // blur the sobel direction vectors (in y and z of the render texture)
+      cmd.SetGlobalInt("_KernelSize", _angleBlurSize);
+      // blur the distance field
+      cmd.Blit(_renderTargetIdentifier, _tmpRT, _boxBlurMaterial, 0);
+      cmd.Blit(_tmpRT, _renderTargetIdentifier, _boxBlurMaterial, 1);
     }
 
     context.ExecuteCommandBuffer(cmd);
     cmd.Clear();
 
     CommandBufferPool.Release(cmd);
+  }
+
+  public override void OnCameraCleanup(CommandBuffer cmd) {
+    cmd.ReleaseTemporaryRT(_tmpId);
   }
 }
