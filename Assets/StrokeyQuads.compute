@@ -19,10 +19,11 @@ float mag(int2 vec) {
   return sqrt((float)(vec.x*vec.x + vec.y*vec.y));
 }
 
-StrokePoint MakeStrokePoint(int2 positionTexel, float angle) {
+StrokePoint MakeStrokePoint(int2 positionTexel, float angle, int2 mainPosTexel) {
   StrokePoint p;
   p.middle = positionTexel;
   p.angle = angle;
+  p.mainPoint = mainPosTexel;
   return p;
 }
 
@@ -64,6 +65,6 @@ void StrokeyQuads (uint3 id : SV_DispatchThreadID) {
   if (minDistance < FLT_MAX) {
     float2 facingVector = (_sobelOutRT[bestPoint].yz*2)-1;
     float angle = atan2(facingVector.y, facingVector.x)/TAU;
-    _quadPoints.Append(MakeStrokePoint(bestPoint, angle));
+    _quadPoints.Append(MakeStrokePoint(bestPoint, angle, mainPoint));
   }
 }

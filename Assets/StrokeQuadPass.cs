@@ -41,7 +41,7 @@ public class StrokeQuadPass : ScriptableRenderPass {
 
     _quadPointsId = Shader.PropertyToID("_quadPoints");
 
-    _quadPoints = new ComputeBuffer(1000, sizeof(uint)*2 + sizeof(float), ComputeBufferType.Append);
+    _quadPoints = new ComputeBuffer(1000, sizeof(uint)*2 + sizeof(float) + sizeof(uint)*2, ComputeBufferType.Append);
 
     _drawArgsBuffer = new ComputeBuffer(4, sizeof(uint), ComputeBufferType.IndirectArguments);
 

@@ -14,8 +14,8 @@ public class OutlineyFeature : ScriptableRendererFeature {
   [SerializeField] Material _strokeQuadMaterial;
   [SerializeField] Material _sobelBlitMaterial;
   [SerializeField] Material _boxBlurMaterial;
-  [SerializeField] Mesh _voronoiConeMesh;
-  [SerializeField] Material _voronoiConeMat;
+  [SerializeField] Mesh _voronoiMesh;
+  [SerializeField] Material _voronoiMaterial;
   // [SerializeField] ComputeShader _jfaComputeShader;
   [SerializeField] ComputeShader _strokeyQuadsComputeShader;
   [SerializeField] int _angleBlurSize = 3;
@@ -32,8 +32,8 @@ public class OutlineyFeature : ScriptableRendererFeature {
       _boxBlurMaterial = _boxBlurMaterial
     };
     _voronoiPass = new VoronoiPass("Voronoi Pass", VoronoiOutRT, _poissonPoints) {
-      _voronoiConeMesh = _voronoiConeMesh,
-      _voronoiConeMat = _voronoiConeMat
+      _voronoiMesh = _voronoiMesh,
+      _voronoiMaterial = _voronoiMaterial
     };
     _strokeQuadPass = new StrokeQuadPass(_strokeyQuadsComputeShader, "Strokey Quads Pass", SobelOutRT, VoronoiOutRT, _poissonPoints, _pointScanSize) {
       _quadMaterial = _strokeQuadMaterial,
