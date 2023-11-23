@@ -13,6 +13,8 @@ StructuredBuffer<float4> _poissonPoints;
 
 uint _scanSize;
 
+float _pointDensity;
+
 AppendStructuredBuffer<StrokePoint> _quadPoints;
 
 float mag(int2 vec) {
@@ -32,6 +34,11 @@ StrokePoint MakeStrokePoint(int2 positionTexel, float angle, int2 mainPosTexel) 
 void StrokeyQuads (uint3 id : SV_DispatchThreadID) {
   float4 poissonPoint = _poissonPoints[id.x/2];
   int2 mainPoint = id.x % 2 == 0 ? int2(poissonPoint.x, poissonPoint.y) : int2(poissonPoint.z, poissonPoint.w);
+  int2 diff = int2(5000, 5000) - int2(_RTWidth, _RTHeight);
+  mainPoint -= diff/2.0;
+
+  mainPoint = ((int2(_RTWidth/2, _RTHeight/2) - mainPoint) * _pointDensity);
+  mainPoint = int2(-mainPoint.x, mainPoint.y)+int2(_RTWidth/2, _RTHeight/2);
 
   // check the starting point just in case
   float mask = _sobelOutRT[mainPoint].x;

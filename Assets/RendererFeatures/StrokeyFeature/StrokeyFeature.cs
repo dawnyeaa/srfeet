@@ -19,6 +19,7 @@ public class StrokeyFeature : ScriptableRendererFeature {
   // [SerializeField] ComputeShader _jfaComputeShader;
   [SerializeField] ComputeShader _strokeyQuadsComputeShader;
   [SerializeField] int _angleBlurSize = 3;
+  [SerializeField] Texture2D _poissonTex;
   [SerializeField] PoissonArrangementObject _poissonPoints;
   [SerializeField] int _pointScanSize;
   [SerializeField] Texture2D _strokeTexture;
@@ -31,10 +32,10 @@ public class StrokeyFeature : ScriptableRendererFeature {
   [SerializeField] float _strokeDensity = 1;
 
   public override void Create() {
-    int SobelOutRT = Shader.PropertyToID("_sobelAngleOutRT");
+    int SobelOutRT = Shader.PropertyToID("_sobelOutRT");
     int VoronoiOutRT = Shader.PropertyToID("_voronoiOutRT");
     _idPass = new IDPass("ID Pass", _layerMask);
-    _sobelishPass = new SobelishPass("Sobelish Angle Pass", SobelOutRT, _angleBlurSize) {
+    _sobelishPass = new SobelishPass("Sobelish Pass", SobelOutRT, _angleBlurSize) {
       _sobelishMaterial = _sobelishMaterial,
       _boxBlurMaterial = _boxBlurMaterial
     };

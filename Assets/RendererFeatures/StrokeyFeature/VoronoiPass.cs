@@ -9,18 +9,21 @@ public class VoronoiPass : ScriptableRenderPass {
   public Material _voronoiMaterial;
 
   private Vector4[] _points;
+  private float _pointDensity;
   private ComputeBuffer _poissonPointsBuffer;
 
   private int _voronoiRenderTargetId;
 
   private RenderTargetIdentifier _voronoiRenderTarget;
 
-  public VoronoiPass(string profilerTag, int voronoiRenderTargetId, PoissonArrangementObject poissonPoints) {
+  public VoronoiPass(string profilerTag, int voronoiRenderTargetId, PoissonArrangementObject poissonPoints, float pointDensity) {
     _profilingSampler = new ProfilingSampler(profilerTag);
 
     _voronoiRenderTargetId = voronoiRenderTargetId;
 
     _points = poissonPoints.points;
+
+    _pointDensity = pointDensity;
 
     renderPassEvent = RenderPassEvent.AfterRenderingTransparents;
   }
@@ -54,6 +57,7 @@ public class VoronoiPass : ScriptableRenderPass {
 
       properties.SetInt("_PositionsSize", _points.Length);
       properties.SetBuffer("_Positions", _poissonPointsBuffer);
+      properties.SetFloat("_PointDensity", _pointDensity);
       cmd.DrawMesh(_voronoiMesh, Matrix4x4.identity, _voronoiMaterial, 0, 0, properties);
     }
 

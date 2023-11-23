@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a8e692382f375647bb6b05e665d42a0, type: 3}
-  m_Name: OutlineyFeature
+  m_Name: StrokeyFeature
   m_EditorClassIdentifier: 
   m_Active: 1
   _layerMask:
@@ -25,10 +25,17 @@ MonoBehaviour:
   _voronoiMaterial: {fileID: 2100000, guid: 50fba0c55186c1348a7ff9e456bb8c58, type: 2}
   _strokeyQuadsComputeShader: {fileID: 7200000, guid: 2289e0735d900594d8652934a5ecd8cb,
     type: 3}
-  _angleBlurSize: 3
+  _angleBlurSize: 41
   _poissonTex: {fileID: 2800000, guid: 1d9df5a64e122ce4b862e5ef3a793798, type: 3}
   _poissonPoints: {fileID: 11400000, guid: 34ac265ee52a1e04caa7477c16c9eaaf, type: 2}
-  _pointScanSize: 19
+  _pointScanSize: 30
+  _strokeTexture: {fileID: 2800000, guid: 57464c73acabef040bc154b77b590b09, type: 3}
+  _strokeSize: 0.16
+  _strokeWidth: 17.92
+  _strokeHeight: 2.46
+  _strokeRandomWidthBounds: {x: 0.2, y: 1.1}
+  _strokeRandomHeightBounds: {x: 0.7, y: 1.4}
+  _strokeDensity: 1.5
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -1,5 +1,7 @@
 Shader "Custom/VoronoiMesh" {
   Properties {
+    _PointDensity ("Point Density", float) = 1
+    _PointSize ("Point Size", float) = 100
   }
 
   SubShader {
@@ -28,6 +30,9 @@ Shader "Custom/VoronoiMesh" {
       int _PositionsSize;
       StructuredBuffer<float4> _Positions;
 
+      float _PointDensity;
+      float _PointSize;
+
       struct VertexInput {
         float4 positionOS : POSITION;
         float2 uv         : TEXCOORD0;
@@ -50,18 +55,18 @@ Shader "Custom/VoronoiMesh" {
         float2 quadPos = quadID % 2 == 0 ? _Positions[index].xy : _Positions[index].zw;
 
         uint size = 5000;
-        uint pointSize = 100;
+        uint pointSize = _PointSize*_PointDensity;
 
-        float2 pos = (i.uv*pointSize+(quadPos*2-size))/_ScreenParams.xy;
+        float2 pos = (i.uv*pointSize+(quadPos*2-size)*_PointDensity)/_ScreenParams.xy;
         o.positionCS = float4(pos, 0, 1);
         o.uv = i.uv;
-        o.color = float4(1, 0, 0, 1);
+        o.color = float4(quadID, 0, 0, 1);
 
         return o;
       }
 
       void frag(VertexOutput i, out float4 color : SV_TARGET0, out float depth : SV_DEPTH) {
-        color = float4(0, 0, 1-length(i.uv), 1);
+        color = float4(i.color.r, 0, length(i.uv), 1);
         depth = 1-length(i.uv);
       }
 
