@@ -62,7 +62,9 @@ public class StrokeQuadPass : ScriptableRenderPass {
     _inputRenderTargetIdentifier = new RenderTargetIdentifier(_inputRenderTargetId);
     _voronoiTexIdentifier = new RenderTargetIdentifier(_voronoiTexId);
 
-    _poissonPoints = new ComputeBuffer(_poissonPointsArrangement.tiledPoints4.Length, Marshal.SizeOf(typeof(Vector4)));
+    if (_poissonPoints == null)
+      _poissonPoints = new ComputeBuffer(_poissonPointsArrangement.points.Length, Marshal.SizeOf(typeof(Vector4)));
+    _poissonPoints.SetData(_poissonPointsArrangement.points);
   }
 
   public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData) {
@@ -71,7 +73,6 @@ public class StrokeQuadPass : ScriptableRenderPass {
 
     RenderTextureDescriptor camRTDesc = renderingData.cameraData.cameraTargetDescriptor;
     RenderTexture camRT = renderingData.cameraData.camera.activeTexture;
-    _poissonPoints.SetData(_poissonPointsArrangement.tiledPoints4);
     
     using (new ProfilingScope(cmd, _profilingSampler)) {
       cmd.SetComputeTextureParam(_strokeQuadCompute, _strokeyQuadsKernel, _inputRenderTargetId, _inputRenderTargetIdentifier);
@@ -84,7 +85,7 @@ public class StrokeQuadPass : ScriptableRenderPass {
       cmd.SetComputeBufferParam(_strokeQuadCompute, _strokeyQuadsKernel, _quadPointsId, _quadPoints);
 
       cmd.DispatchCompute(_strokeQuadCompute, _strokeyQuadsKernel,
-                          Mathf.CeilToInt(_poissonPointsArrangement.tiledPoints4.Length / 64f),
+                          Mathf.CeilToInt(_poissonPointsArrangement.points.Length * 2f / 64f),
                           1,
                           1);
       
@@ -110,7 +111,10 @@ public class StrokeQuadPass : ScriptableRenderPass {
     CommandBufferPool.Release(cmd);
   }
 
-  public override void OnCameraCleanup(CommandBuffer cmd) {}
+  public override void OnCameraCleanup(CommandBuffer cmd) {
+    cmd.ReleaseTemporaryRT(_inputRenderTargetId);
+    cmd.ReleaseTemporaryRT(_voronoiTexId);
+  }
 
   public void Dispose() {
     _quadPoints?.Dispose();

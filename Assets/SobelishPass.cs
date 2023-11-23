@@ -68,6 +68,7 @@ public class SobelishPass : ScriptableRenderPass {
   }
 
   public override void OnCameraCleanup(CommandBuffer cmd) {
+    cmd.ReleaseTemporaryRT(_idMapId);
     cmd.ReleaseTemporaryRT(_tmpId);
   }
 }

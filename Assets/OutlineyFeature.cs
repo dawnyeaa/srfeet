@@ -51,6 +51,7 @@ public class OutlineyFeature : ScriptableRendererFeature {
   }
 
   protected override void Dispose(bool disposing) {
+    _voronoiPass.Dispose();
     _strokeQuadPass.Dispose();
     base.Dispose(disposing);
   }

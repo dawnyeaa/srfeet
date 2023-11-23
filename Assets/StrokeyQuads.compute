@@ -30,8 +30,8 @@ StrokePoint MakeStrokePoint(int2 positionTexel, float angle, int2 mainPosTexel) 
 #pragma kernel StrokeyQuads
 [numthreads(64,1,1)]
 void StrokeyQuads (uint3 id : SV_DispatchThreadID) {
-  float4 poissonPoint = _poissonPoints[id.x];
-  int2 mainPoint = int2(poissonPoint.x, poissonPoint.y);
+  float4 poissonPoint = _poissonPoints[id.x/2];
+  int2 mainPoint = id.x % 2 == 0 ? int2(poissonPoint.x, poissonPoint.y) : int2(poissonPoint.z, poissonPoint.w);
 
   // check the starting point just in case
   float mask = _sobelOutRT[mainPoint].x;
