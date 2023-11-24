@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
-public class SobelishPass : ScriptableRenderPass {
+public class SobelishAnglePass : ScriptableRenderPass {
   // the material with our sobelish shader on it
   public Material _sobelishMaterial;
   public Material _boxBlurMaterial;
@@ -20,7 +20,7 @@ public class SobelishPass : ScriptableRenderPass {
 
   private int _angleBlurSize;
 
-  public SobelishPass(string profilerTag, int renderTargetId, int angleBlurSize) {
+  public SobelishAnglePass(string profilerTag, int renderTargetId, int angleBlurSize) {
     // set up the profiler so it has a slot in there
     _profilingSampler = new ProfilingSampler(profilerTag);
     _renderTargetId = renderTargetId;

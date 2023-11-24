@@ -4,7 +4,7 @@ using UnityEngine.Rendering.Universal;
 
 public class StrokeyFeature : ScriptableRendererFeature {
   private IDPass _idPass;
-  private SobelishPass _sobelishPass;
+  private SobelishAnglePass _sobelishPass;
   private JFAPass _jfaPass;
   private VoronoiPass _voronoiPass;
   private StrokeQuadPass _strokeQuadPass;
@@ -35,7 +35,7 @@ public class StrokeyFeature : ScriptableRendererFeature {
     int SobelOutRT = Shader.PropertyToID("_sobelOutRT");
     int VoronoiOutRT = Shader.PropertyToID("_voronoiOutRT");
     _idPass = new IDPass("ID Pass", _layerMask);
-    _sobelishPass = new SobelishPass("Sobelish Pass", SobelOutRT, _angleBlurSize) {
+    _sobelishPass = new SobelishAnglePass("Sobelish Pass", SobelOutRT, _angleBlurSize) {
       _sobelishMaterial = _sobelishMaterial,
       _boxBlurMaterial = _boxBlurMaterial
     };
